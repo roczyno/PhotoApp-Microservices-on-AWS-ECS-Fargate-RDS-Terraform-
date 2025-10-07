@@ -72,7 +72,7 @@ public class UsersController {
 	@GetMapping("/{userId}")
 	@PostAuthorize("principal == returnObject.body.userId")
 	public ResponseEntity<UserResponseModel> getUser(@PathVariable("userId") String userId,
-			@RequestHeader("Authorization") String authorization,
+			@RequestHeader("Authorization") String authorization, 
 			@RequestParam(value = "fields", required = false) String fields) {
 
 		UserDto userDto = usersService.getUserByUserId(userId);

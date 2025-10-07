@@ -1,38 +1,50 @@
 variable "vpc_cidr" {
   description = "CIDR block for VPC"
   type        = string
-  default     = "10.0.0.0/16"
 }
 
 variable "cluster_name" {
   description = "Name of the ECS cluster"
   type        = string
-  default     = "photoapp-cluster"
 }
 
 variable "microservices" {
   description = "Configuration for microservices"
   type = map(object({
-    port        = number
-    cpu         = number
-    memory      = number
+    port          = number
+    cpu           = number
+    memory        = number
     desired_count = number
-    health_path = string
+    health_path   = string
   }))
-  default = {
-    "users-microservice" = {
-      port          = 8081
-      cpu           = 256
-      memory        = 512
-      desired_count = 2
-      health_path   = "/actuator/health"
-    }
-    "photo-microservice" = {
-      port          = 8080
-      cpu           = 256
-      memory        = 512
-      desired_count = 1
-      health_path   = "/actuator/health"
-    }
-  }
+}
+
+variable "db_instance_class" {
+  description = "RDS instance class"
+  type        = string
+}
+
+variable "db_name" {
+  description = "Name of the database"
+  type        = string
+}
+
+variable "db_username" {
+  description = "Database master username"
+  type        = string
+}
+
+variable "db_password" {
+  description = "Database master password"
+  type        = string
+  sensitive   = true
+}
+
+variable "dbs" {
+  description = "Per-service database settings"
+  type = map(object({
+    db_name     = string
+    db_username = string
+    db_password = string
+  }))
 }

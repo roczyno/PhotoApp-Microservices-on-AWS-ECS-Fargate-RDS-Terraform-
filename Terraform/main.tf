@@ -1,148 +1,87 @@
 provider "aws" {
-  region = "us-east-1"
+  region = "eu-west-1"
 }
 
-resource "aws_vpc" "PhotoApp_VPC" {
-  cidr_block = var.vpc_cidr
-  tags = {
-      Name = "${var.cluster_name}-vpc"
+
+module "networking" {
+  source = "./modules/networking"
+  cluster_name = var.cluster_name
+  vpc_cidr     = var.vpc_cidr  
+}
+
+module "ecr" {
+  source = "./modules/ecr"
+  microservices = var.microservices
+  cluster_name = var.cluster_name
+}
+
+module "database_users" {
+  source = "./modules/database"
+  cluster_name         = "${var.cluster_name}-users"
+  db_instance_class    = var.db_instance_class
+  db_name              = var.dbs["users-microservice"].db_name
+  db_username          = var.dbs["users-microservice"].db_username
+  db_password          = var.dbs["users-microservice"].db_password
+  db_subnet_group_name = module.networking.db_subnet_group_name
+  rds_sg_id            = module.networking.rds_sg_id
+}
+
+module "database_albums" {
+  source = "./modules/database"
+  cluster_name         = "${var.cluster_name}-albums"
+  db_instance_class    = var.db_instance_class
+  db_name              = var.dbs["photo-microservice"].db_name
+  db_username          = var.dbs["photo-microservice"].db_username
+  db_password          = var.dbs["photo-microservice"].db_password
+  db_subnet_group_name = module.networking.db_subnet_group_name
+  rds_sg_id            = module.networking.rds_sg_id
+}
+
+module "alb" {
+  source          = "./modules/alb"
+  cluster_name    = var.cluster_name
+  microservices   = var.microservices
+  public_subnet_ids = module.networking.public_subnet_ids
+  vpc_id            = module.networking.vpc_id
+  alb_sg_id         = module.networking.alb_sg_id
+}
+
+module "ecs" {
+  source                 = "./modules/ecs"
+  cluster_name           = var.cluster_name
+  microservices          = var.microservices
+  private_subnet_ids     = module.networking.private_subnet_ids
+  ecs_sg_id              = module.networking.ecs_sg_id
+  alb_target_group_arns  = module.alb.target_groups
+  ecr_repository_urls    = module.ecr.repositories
+  db_names               = {
+    "users-microservice" = var.dbs["users-microservice"].db_name
+    "photo-microservice" = var.dbs["photo-microservice"].db_name
+  }
+  db_endpoints           = {
+    "users-microservice" = module.database_users.endpoint
+    "photo-microservice" = module.database_albums.endpoint
+  }
+  db_ports               = {
+    "users-microservice" = module.database_users.port
+    "photo-microservice" = module.database_albums.port
+  }
+  db_secret_arns         = {
+    "users-microservice" = module.database_users.secret_arn
+    "photo-microservice" = module.database_albums.secret_arn
   }
 }
 
-data "aws_availability_zones" "available" {
-    state = "available"
-}
-
-
-resource "aws_subnet" "public" {
-    count = length(data.aws_availability_zones.available.names)
-    vpc_id = aws_vpc.PhotoApp_VPC.id
-    availability_zone = data.aws_availability_zones.available.names[count.index]
-    map_public_ip_on_launch = true
-    cidr_block = cidrsubnet(var.vpc_cidr, 8, count.index)
-    tags = {
-        Name = "${var.cluster_name}-public-subnet-${count.index + 1}"
-    }
-  
-}
-
-resource "aws_subnet" "private" {
-    count = length(data.aws_availability_zones.available.names)
-    vpc_id = aws_vpc.PhotoApp_VPC.id
-    availability_zone = data.aws_availability_zones.available.names[count.index]
-    map_public_ip_on_launch = false
-    cidr_block = cidrsubnet(var.vpc_cidr, 8, count.index + 10)
-    tags = {
-        Name = "${var.cluster_name}-private-subnet-${count.index + 1}"
-    }
-}
-
-
-resource "aws_internet_gateway" "PhotoApp_IGW" {
-    vpc_id = aws_vpc.PhotoApp_VPC.id
-    tags = {
-        Name = "${var.cluster_name}-igw"
-    }
-  
-}
-
-resource "aws_route_table" "public" {
-    vpc_id = aws_vpc.PhotoApp_VPC.id
-
-    route {
-        cidr_block = "0.0.0.0/0"
-        gateway_id = aws_internet_gateway.PhotoApp_IGW.id
-    }
-
-    tags = {
-        Name = "${var.cluster_name}-public-route-table"
-    }
-}
-
-resource "aws_route_table_association" "public" {
-    count = length(aws_subnet.public)
-    subnet_id = aws_subnet.public[count.index].id
-    route_table_id = aws_route_table.public.id
-}
-
-
-resource "aws_eip" "nat" {
-  count  = length(data.aws_availability_zones.available.names)
-  domain = "vpc"
-
-  tags = {
-    Name = "${var.cluster_name}-nat-eip-${count.index + 1}"
+module "monitoring" {
+  source            = "./modules/monitoring"
+  cluster_name      = var.cluster_name
+  microservices     = var.microservices
+  ecs_cluster_name  = module.ecs.cluster_name
+  ecs_service_names = module.ecs.services
+  rds_instance_ids  = {
+    "users-microservice" = module.database_users.rds_id
+    "photo-microservice" = module.database_albums.rds_id
   }
-}
-
-resource "aws_nat_gateway" "main" {
-  count         = length(data.aws_availability_zones.available.names)
-  allocation_id = aws_eip.nat[count.index].id
-  subnet_id     = aws_subnet.public[count.index].id
-
-  tags = {
-    Name = "${var.cluster_name}-nat-${count.index + 1}"
-  }
-}
-
-resource "aws_route_table" "private" {
-  count  = length(data.aws_availability_zones.available.names)
-  vpc_id = aws_vpc.PhotoApp_VPC.id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main[count.index].id
-  }
-
-  tags = {
-    Name = "${var.cluster_name}-private-rt-${count.index + 1}"
-  }
-}
-
-resource "aws_route_table_association" "private" {
-  count          = length(aws_subnet.private)
-  subnet_id      = aws_subnet.private[count.index].id
-  route_table_id = aws_route_table.private[count.index].id
-}
-
-
-
-resource "aws_ecr_repository" "microservices" {
-  for_each             = var.microservices
-  name                 = "${var.cluster_name}-${each.key}"
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = {
-    Name        = "${var.cluster_name}-${each.key}"
-    Service     = each.key
-  }
-}
-
-resource "aws_ecr_lifecycle_policy" "microservices" {
-  for_each   = var.microservices
-  repository = aws_ecr_repository.microservices[each.key].name
-
-  policy = jsonencode({
-    rules = [
-      {
-        rulePriority = 1
-        description  = "Keep last 10 images"
-        selection = {
-          tagStatus     = "tagged"
-          tagPrefixList = ["v"]
-          countType     = "imageCountMoreThan"
-          countNumber   = 10
-        }
-        action = {
-          type = "expire"
-        }
-      }
-    ]
-  })
 }
 
 
