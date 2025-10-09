@@ -59,8 +59,8 @@ module "ecs" {
     "photo-microservice" = var.dbs["photo-microservice"].db_name
   }
   db_endpoints           = {
-    "users-microservice" = module.database_users.endpoint
-    "photo-microservice" = module.database_albums.endpoint
+    "users-microservice" = module.database_users.address
+    "photo-microservice" = module.database_albums.address
   }
   db_ports               = {
     "users-microservice" = module.database_users.port

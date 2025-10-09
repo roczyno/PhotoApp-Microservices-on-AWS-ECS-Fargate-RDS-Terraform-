@@ -202,11 +202,11 @@ environment = concat([
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:${each.value.port}${each.value.health_path} || exit 1"]
+        command     = ["CMD-SHELL", "wget -qO- http://localhost:${each.value.port}${each.value.health_path} >/dev/null 2>&1 || exit 1"]
         interval    = 30
         timeout     = 5
-        retries     = 3
-        startPeriod = 60
+        retries     = 5
+        startPeriod = 120
       }
     }
   ])
