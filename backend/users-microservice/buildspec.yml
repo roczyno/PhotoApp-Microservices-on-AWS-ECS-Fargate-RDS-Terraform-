@@ -6,8 +6,8 @@ phases:
       - aws --version
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${IMAGE_REPO_URI%/*}
       - cd backend/users-microservice
-      - chmod +x mvnw || true
-      - ./mvnw -q -DskipTests package
+      - mvn clean package
+
   build:
     commands:
       - docker build -f dockerfile -t $IMAGE_REPO_URI:latest .
