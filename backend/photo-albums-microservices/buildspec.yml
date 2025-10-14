@@ -9,7 +9,7 @@ phases:
       - ./mvnw -q -DskipTests package
   build:
     commands:
-      - docker build -t $IMAGE_REPO_URI:latest .
+      - docker build -f dockerfile -t $IMAGE_REPO_URI:latest .
       - IMAGE_TAG=v$(date +%Y%m%d%H%M%S)
       - docker tag $IMAGE_REPO_URI:latest $IMAGE_REPO_URI:$IMAGE_TAG
   post_build:
@@ -19,5 +19,7 @@ phases:
       - printf '[{"name":"photo-microservice","imageUri":"%s"}]' "$IMAGE_REPO_URI:$IMAGE_TAG" > imagedefinitions.json
 artifacts:
   files:
-    - backend/photo-albums-microservices/imagedefinitions.json
-    - backend/photo-albums-microservices/target/**/*
+    - imagedefinitions.json
+    - target/**/*
+  base-directory: backend/photo-albums-microservices
+  discard-paths: yes
