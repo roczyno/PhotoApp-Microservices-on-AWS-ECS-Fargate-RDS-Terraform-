@@ -56,7 +56,12 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
           "ecs:UpdateService",
           "ecs:DescribeClusters",
           "ecs:ListTasks",
-          "ecs:DescribeTasks"
+          "ecs:DescribeTasks",
+          "ecs:DescribeTaskDefinitions",
+          "ecs:ListServices",
+          "ecs:DescribeService",
+          "ecs:CreateService",
+          "ecs:DeleteService"
         ],
         Resource = ["*"]
       },
@@ -65,6 +70,27 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
         Action = ["iam:PassRole"],
         Resource = [var.ecs_task_execution_role_arn],
         Condition = { StringLikeIfExists = { "iam:PassedToService": "ecs-tasks.amazonaws.com" } }
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ],
+        Resource = ["*"]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "elasticloadbalancing:DescribeTargetGroups",
+          "elasticloadbalancing:DescribeTargetHealth",
+          "elasticloadbalancing:RegisterTargets",
+          "elasticloadbalancing:DeregisterTargets"
+        ],
+        Resource = ["*"]
       }
     ]
   })
