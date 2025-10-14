@@ -11,6 +11,6 @@ public class HealthCheck {
 
 	@GetMapping
 	public String healthCheck() {
-		return "OK from users microservice";
+		return "OK from users microservice!!!";
 	}
 }
