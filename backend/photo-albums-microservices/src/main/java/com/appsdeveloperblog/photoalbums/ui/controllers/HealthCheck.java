@@ -10,6 +10,6 @@ public class HealthCheck {
 
 	@GetMapping
 	public String healthCheck() {
-		return "OK from photo albums microservice";
+		return "OK from photo albums microservice!!!";
 	}
 }
