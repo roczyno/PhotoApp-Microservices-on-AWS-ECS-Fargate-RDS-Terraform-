@@ -104,6 +104,7 @@ module "ci_cd_users" {
   source_repo    = var.source_repo
   source_branch  = var.source_branch
   build_context  = var.users_build_context
+  ecs_task_execution_role_arn = module.ecs.task_execution_role_arn
 }
 
 module "ci_cd_albums" {
@@ -119,5 +120,6 @@ module "ci_cd_albums" {
   source_repo    = var.source_repo
   source_branch  = var.source_branch
   build_context  = var.albums_build_context
+  ecs_task_execution_role_arn = module.ecs.task_execution_role_arn
 }
 

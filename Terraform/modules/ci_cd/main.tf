@@ -63,7 +63,7 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
       {
         Effect = "Allow",
         Action = ["iam:PassRole"],
-        Resource = ["*"],
+        Resource = [var.ecs_task_execution_role_arn],
         Condition = { StringLikeIfExists = { "iam:PassedToService": "ecs-tasks.amazonaws.com" } }
       }
     ]

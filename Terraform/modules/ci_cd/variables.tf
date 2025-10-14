@@ -46,4 +46,9 @@ variable "build_context" {
   type        = string
 }
 
+variable "ecs_task_execution_role_arn" {
+  description = "ECS task execution role ARN for CodePipeline to pass to ECS"
+  type        = string
+}
+
 
