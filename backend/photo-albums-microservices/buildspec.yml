@@ -6,6 +6,7 @@ phases:
       - aws --version
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${IMAGE_REPO_URI%/*}
       - cd backend/photo-albums-microservices
+      - chmod +x mvnw || true
       - ./mvnw -q -DskipTests package
   build:
     commands:
