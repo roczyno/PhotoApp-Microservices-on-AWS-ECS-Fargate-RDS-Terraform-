@@ -151,6 +151,7 @@ resource "aws_ecs_task_definition" "microservices" {
           name          = each.key
           containerPort = each.value.port
           protocol      = "tcp"
+          appProtocol   = "http"
         }
       ]
 
@@ -175,7 +176,7 @@ environment = concat([
 ], each.key == "users-microservice" ? [
   {
     name  = "albums.url"
-    value = "http://photo-microservice:8080/albums"
+    value = "http://photo-microservice.${var.cluster_name}:8080/albums"
   }
 ] : [])
 
@@ -254,6 +255,10 @@ resource "aws_ecs_service" "microservices" {
         port     = each.value.port
         dns_name = each.key
       }
+
+        # Note: Only a single client_alias is allowed per service. Other
+        # services can resolve this service by its discovery_name/client_alias
+        # without defining additional aliases here.
     }
 
     # Service Connect logging
