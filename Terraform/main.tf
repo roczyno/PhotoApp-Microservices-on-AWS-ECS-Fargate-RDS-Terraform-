@@ -85,4 +85,39 @@ module "monitoring" {
 }
 
 
+# CodeStar connection (one per account/region; complete handshake in console)
+resource "aws_codestarconnections_connection" "github" {
+  name          = "${var.cluster_name}-github"
+  provider_type = "GitHub"
+}
+
+module "ci_cd_users" {
+  source           = "./modules/ci_cd"
+  cluster_name     = var.cluster_name
+  region           = "eu-west-1"
+  microservice     = "users-microservice"
+  repository_url   = module.ecr.repositories["users-microservice"]
+  ecs_service_name = "${var.cluster_name}-users-microservice-service"
+  ecs_cluster_name = var.cluster_name
+
+  connection_arn = aws_codestarconnections_connection.github.arn
+  source_repo    = var.source_repo
+  source_branch  = var.source_branch
+  build_context  = var.users_build_context
+}
+
+module "ci_cd_albums" {
+  source           = "./modules/ci_cd"
+  cluster_name     = var.cluster_name
+  region           = "eu-west-1"
+  microservice     = "photo-microservice"
+  repository_url   = module.ecr.repositories["photo-microservice"]
+  ecs_service_name = "${var.cluster_name}-photo-microservice-service"
+  ecs_cluster_name = var.cluster_name
+
+  connection_arn = aws_codestarconnections_connection.github.arn
+  source_repo    = var.source_repo
+  source_branch  = var.source_branch
+  build_context  = var.albums_build_context
+}
 

@@ -38,6 +38,7 @@ public class WebSecurity {
                 .csrf().disable().authorizeHttpRequests()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers("/photo/healthcheck").permitAll()
                 .anyRequest().authenticated().and()
                 .addFilter(new AuthorizationFilter(authenticationManager,environment))
                 .authenticationManager(authenticationManager)

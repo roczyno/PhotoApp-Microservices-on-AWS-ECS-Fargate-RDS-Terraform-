@@ -48,3 +48,26 @@ variable "dbs" {
     db_password = string
   }))
 }
+
+variable "source_repo" {
+  description = "GitHub repository in owner/name format"
+  type        = string
+}
+
+variable "source_branch" {
+  description = "Branch to build from"
+  type        = string
+  default     = "main"
+}
+
+variable "users_build_context" {
+  description = "Path to users microservice directory"
+  type        = string
+  default     = "backend/users-microservice"
+}
+
+variable "albums_build_context" {
+  description = "Path to photo albums microservice directory"
+  type        = string
+  default     = "backend/photo-albums-microservices"
+}
