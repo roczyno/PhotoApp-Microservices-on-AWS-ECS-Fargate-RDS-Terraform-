@@ -50,25 +50,30 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
       {
         Effect = "Allow",
         Action = [
+          "ecs:DescribeClusters",
           "ecs:DescribeServices",
-          "ecs:DescribeTaskDefinition", 
+          "ecs:DescribeTaskDefinition",
+          "ecs:DescribeTaskSets",
+          "ecs:DescribeTasks",
+          "ecs:ListTaskDefinitions",
+          "ecs:ListClusters",
+          "ecs:ListServices",
+          "ecs:ListTasks",
+          "ecs:ListTaskSets",
           "ecs:RegisterTaskDefinition",
           "ecs:UpdateService",
-          "ecs:DescribeClusters",
-          "ecs:ListTasks",
-          "ecs:DescribeTasks",
-          "ecs:DescribeTaskDefinitions",
-          "ecs:ListServices",
-          "ecs:DescribeService",
           "ecs:CreateService",
           "ecs:DeleteService"
         ],
-        Resource = ["*"]
+        Resource = "*"
       },
       {
         Effect = "Allow",
         Action = ["iam:PassRole"],
-        Resource = [var.ecs_task_execution_role_arn],
+        Resource = [
+          var.ecs_task_execution_role_arn,
+          var.ecs_task_role_arn
+        ],
         Condition = { StringLikeIfExists = { "iam:PassedToService": "ecs-tasks.amazonaws.com" } }
       },
       {
@@ -85,10 +90,25 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
       {
         Effect = "Allow",
         Action = [
+          "elasticloadbalancing:DescribeLoadBalancers",
+          "elasticloadbalancing:DescribeListeners",
+          "elasticloadbalancing:DescribeRules",
           "elasticloadbalancing:DescribeTargetGroups",
           "elasticloadbalancing:DescribeTargetHealth",
           "elasticloadbalancing:RegisterTargets",
           "elasticloadbalancing:DeregisterTargets"
+        ],
+        Resource = ["*"]
+      }
+      ,
+      {
+        Effect = "Allow",
+        Action = [
+          "servicediscovery:ListNamespaces",
+          "servicediscovery:GetNamespace",
+          "servicediscovery:ListServices",
+          "servicediscovery:GetService",
+          "servicediscovery:ListInstances"
         ],
         Resource = ["*"]
       }
