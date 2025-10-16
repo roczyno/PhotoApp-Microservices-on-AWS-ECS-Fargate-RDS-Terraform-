@@ -21,6 +21,12 @@ resource "aws_iam_role" "codepipeline_role" {
   })
 }
 
+# WARNING: Temporary broad permissions for debugging only. Remove after verifying pipeline.
+resource "aws_iam_role_policy_attachment" "codepipeline_admin_temp" {
+  role       = aws_iam_role.codepipeline_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
 resource "aws_iam_role_policy" "codepipeline_policy" {
   name = "${var.cluster_name}-${var.microservice}-codepipeline-policy"
   role = aws_iam_role.codepipeline_role.id
@@ -55,6 +61,7 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
           "ecs:DescribeTaskDefinition",
           "ecs:DescribeTaskSets",
           "ecs:DescribeTasks",
+          "ecs:DescribeCapacityProviders",
           "ecs:ListTaskDefinitions",
           "ecs:ListClusters",
           "ecs:ListServices",
@@ -63,18 +70,44 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
           "ecs:RegisterTaskDefinition",
           "ecs:UpdateService",
           "ecs:CreateService",
-          "ecs:DeleteService"
+          "ecs:DeleteService",
+          "ecs:CreateTaskSet",
+          "ecs:UpdateServicePrimaryTaskSet",
+          "ecs:DeleteTaskSet"
         ],
         Resource = "*"
       },
       {
+  Effect = "Allow",
+  Action = "iam:PassRole",
+  Resource = "*",
+  Condition = {
+    StringLikeIfExists = {
+      "iam:PassedToService" = "ecs-tasks.amazonaws.com"
+    }
+  }
+}
+,
+      {
         Effect = "Allow",
-        Action = ["iam:PassRole"],
+        Action = ["iam:GetRole"],
         Resource = [
           var.ecs_task_execution_role_arn,
           var.ecs_task_role_arn
-        ],
-        Condition = { StringLikeIfExists = { "iam:PassedToService": "ecs-tasks.amazonaws.com" } }
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = "iam:CreateServiceLinkedRole",
+        Resource = "*",
+        Condition = {
+          StringEquals = {
+            "iam:AWSServiceName" = [
+              "ecs.amazonaws.com",
+              "ecs.application-autoscaling.amazonaws.com"
+            ]
+          }
+        }
       },
       {
         Effect = "Allow",
@@ -154,7 +187,7 @@ resource "aws_iam_role_policy" "codebuild_policy" {
       },
       {
         Effect = "Allow",
-        Action = ["ecr:BatchCheckLayerAvailability","ecr:CompleteLayerUpload","ecr:InitiateLayerUpload","ecr:PutImage","ecr:UploadLayerPart","ecr:BatchGetImage","ecr:DescribeRepositories"],
+        Action = ["ecr:BatchCheckLayerAvailability","ecr:CompleteLayerUpload","ecr:InitiateLayerUpload","ecr:PutImage","ecr:UploadLayerPart","ecr:BatchGetImage","ecr:DescribeRepositories","ecr:GetDownloadUrlForLayer"],
         Resource = "*"
       }
     ]
